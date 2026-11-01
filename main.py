@@ -52,11 +52,20 @@ def check_backup_files(url, extensions):
     """
     found_files = []
     for ext in extensions:
+        # The extension is glued onto the URL exactly as given, so a
+        # scan of a site root only ever tests one name: the host with
+        # an extension, or a lone extension under the root. Finding
+        # index.php.bak means passing the full file URL myself. There
+        # is no crawling here, despite the BeautifulSoup import above.
         backup_url = url + ext
         try:
             logging.debug(f"Checking for: {backup_url}")
             response = requests.get(backup_url, allow_redirects=True, timeout=REQUEST_TIMEOUT)
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            # A 200 after redirects is the whole test. The body is
+            # never read or compared against the original file, so a
+            # catch all site that answers 200 with its homepage for
+            # every path reports every extension as a backup found.
             if response.status_code == 200:
                 logging.info(f"Found backup file: {backup_url}")
                 found_files.append(backup_url)
@@ -64,6 +73,9 @@ def check_backup_files(url, extensions):
                 logging.debug(f"Status code {response.status_code} for {backup_url}")
 
         except requests.exceptions.RequestException as e:
+            # Failures are debug only, so without --verbose a scan
+            # where every request failed prints the same "No backup
+            # files found" as a clean scan, and exits 0 either way.
             logging.debug(f"Error checking {backup_url}: {e}")  # Log the error, but continue checking
 
     return found_files

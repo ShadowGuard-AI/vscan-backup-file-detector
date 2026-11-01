@@ -14,6 +14,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # List of common backup file extensions to check for
 BACKUP_EXTENSIONS = ['.bak', '.swp', '~', '.old', '.tmp', '.backup', '.orig']
 
+# Timeout in seconds for every probe request
+REQUEST_TIMEOUT = 10
+
 def setup_argparse():
     """
     Sets up the argument parser for the command-line interface.
@@ -52,7 +55,7 @@ def check_backup_files(url, extensions):
         backup_url = url + ext
         try:
             logging.debug(f"Checking for: {backup_url}")
-            response = requests.get(backup_url, allow_redirects=True)
+            response = requests.get(backup_url, allow_redirects=True, timeout=REQUEST_TIMEOUT)
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
             if response.status_code == 200:
                 logging.info(f"Found backup file: {backup_url}")
